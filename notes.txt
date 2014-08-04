@@ -1,0 +1,89 @@
+Why did you use "Horrible ugly hack?":
+
+
+
+This is my code here:
+
+
+insert : Fin n -> List (Fin n) -> List (Fin n)
+insert x [] = x :: []
+insert x (y :: ys) = case compare' x y of
+  LT => (x :: (y :: ys))
+  EQ => (x :: (y :: ys))
+  GT => (y :: (insert x ys))
+
+ridiculous_lemma : (x : Fin n) -> (y : Fin n) -> (l : List (Fin n)) ->
+                   (insert x (y :: ys) = (case compare' x y of
+  LT => (x :: (y :: ys))
+  EQ => (x :: (y :: ys))
+  GT => (y :: (insert x ys))))
+ridiculous_lemma x y l = refl
+
+insert_spec : Sortable a =>
+              (env : Vect n a) ->
+              (x : Fin n) -> (xs : List (Fin n)) ->
+              evL env (x :: xs) = evL env (insert x xs)
+insert_spec = ?p1
+
+
+I proved insert_spec before, when "compare" was abstract (from a typeclass).
+I realized I only want this for one specific definition (fin_compare) but the proof is not working:
+
+I need to change the goal:
+
+index x env & evL env (t0 :: l0) = evL env (insert x (t0 :: l0))
+
+into the goal:
+
+index x env & evL env (t0 :: l0) = evL env (case compare' x t0 of
+  LT => (x :: (t0 :: l0))
+  EQ => (x :: (t0 :: l0))
+  GT => (t0 :: (insert x l0))))
+
+
+-permutations.p1> intro t0,l0,E
+----------              Assumptions:              ----------
+ E : index x env & evL env l0 = evL env (insert x l0)
+----------                 Goal:                  ----------
+{hole15} : index x env & evL env (t0 :: l0) =
+           evL env (insert x (t0 :: l0))
+
+
+-permutations.p1> rewrite (ridiculous_lemma x t0 l0)
+----------              Assumptions:              ----------
+ E : index x env & evL env l0 = evL env (insert x l0)
+ {ys521} : List (Fin n)
+----------                 Goal:                  ----------
+{hole16} : index x env & evL env (t0 :: l0) =
+           evL env (insert x (t0 :: l0))
+
+
+-permutations.p1> rewrite sym (ridiculous_lemma x t0 l0)
+----------              Assumptions:              ----------
+ E : index x env & evL env l0 = evL env (insert x l0)
+ {ys521} : List (Fin n)
+ {ys534} : List (Fin n)
+----------                 Goal:                  ----------
+{hole25} : index x env & evL env (t0 :: l0) =
+           evL env (insert x (t0 :: l0))
+
+
+-- nothing happens with rewrite or rewrite sym
+
+
+-permutations.p1> compute
+----------              Assumptions:              ----------
+ E : index x env & evL env l0 = evL env (insert x l0)
+ {ys521} : List (Fin n)
+ {ys534} : List (Fin n)
+----------                 Goal:                  ----------
+{hole25} : index x env & (index t0 env & evL env l0) =
+           evL env
+               (case block in insert n
+                                     x
+                                     t0
+                                     l0
+                                     (Nat instance of Prelude.Classes.Ord, method compare (finToNat x)
+                                                                                          (finToNat t0)))
+
+-- compute reduces too much, so I can't do the case analysis on compare' x t0
