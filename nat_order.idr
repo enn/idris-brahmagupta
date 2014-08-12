@@ -19,6 +19,28 @@ instance SpecifiedOrdering Nat where
 
 ---------- Proofs ----------
 
+nat_order.p2 = proof
+  intro x
+  induction x
+  intro y
+  case y
+  compute
+  intro H
+  exact H
+  intro n1
+  compute
+  intro H
+  exact (absurd H)
+  intro n0,IH,y
+  case y
+  compute
+  intro H
+  exact (absurd H)
+  intro n1
+  compute
+  exact (IH n1)
+
+
 nat_order.p8 = proof
   intro x
   induction x
@@ -227,32 +249,6 @@ nat_order.p3 = proof
   intro n3,H1,H2
   exact (IH _ _ H1 H2)
 
-
-nat_order.p2 = proof
-  intro x
-  induction x
-  compute
-  intro y
-  case y
-  compute
-  intro
-  trivial
-  intro y'
-  compute
-  intro H
-  exact (absurd H)
-  intro n0
-  compute
-  intro H,y
-  case y
-  compute
-  intro H'
-  exact (absurd H')
-  intro n1
-  compute
-  intro
-  refine H
-  trivial
 
 
 nat_order.p1 = proof
