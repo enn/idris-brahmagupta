@@ -1,0 +1,22 @@
+module fin_order
+
+import order
+import nat_order
+
+fin_compare : Fin n -> Fin n -> Ordering
+fin_compare x y = compare (finToNat x) (finToNat y)
+
+instance SpecifiedOrdering (Fin n) where
+ compare' = fin_compare
+ 
+ eq_refl x = eq_refl (finToNat x)
+ eq_symm x y = eq_symm (finToNat x) (finToNat y)
+ eq_trans x y z = eq_trans (finToNat x) (finToNat y) (finToNat z)
+ 
+ -- ordering relation
+ ord_lt_gt x y = ord_lt_gt (finToNat x) (finToNat y)
+ ord_gt_lt x y = ord_gt_lt (finToNat x) (finToNat y)
+ ord_lt_eq x y z = ord_lt_eq (finToNat x) (finToNat y) (finToNat z)
+ ord_gt_eq x y z = ord_gt_eq (finToNat x) (finToNat y) (finToNat z)
+ ord_lt_trans x y z = ord_lt_trans (finToNat x) (finToNat y) (finToNat z)
+
