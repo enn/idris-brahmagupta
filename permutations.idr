@@ -1,6 +1,7 @@
 module permutations
 
-import fin_ord_theory
+import order
+import fin_order
 
 infixl 8 &
 
@@ -12,6 +13,10 @@ class Sortable a where
  rightId : (x : a) -> x & e = x
  ass : (x : a) -> (y : a) -> (z : a) -> x & (y & z) = (x & y) & z
  comm : (x : a) -> (y : a) -> x & y = y & x
+
+evL : Sortable a => Vect n a -> List (Fin n) -> a
+evL env [] = e
+evL env (x :: xs) = index x env & evL env xs
 
 instance [sort_plus] Sortable Nat where
  e = 0
@@ -30,131 +35,72 @@ instance [sort_times] Sortable Nat where
  rightId = multOneRightNeutral
  ass = multAssociative
  comm = multCommutative
-
-
-class HorribleUglyHack a where
- compare' : a -> a -> Ordering
  
- ord_eq_refl : (x : a) -> compare' x x = EQ
- ord_eq_symm : (x : a) -> (y : a) -> compare' x y = EQ -> compare' y x = EQ
- ord_eq_trans : (x : a) -> (y : a) -> (z : a) -> compare' x y = EQ -> compare' y z = EQ -> compare' x z = EQ
- ord_trans : (x : a) -> (y : a) -> (z : a) -> compare' x y = LT -> compare' y z = LT -> compare' x z = LT
- ord_symm : (x : a) -> (y : a) -> compare' x y = LT -> compare' y x = GT
- ord_trans' : (x : a) -> (y : a) -> (z : a) -> compare' x y = GT -> compare' y z = GT -> compare' x z = GT
- ord_symm' : (x : a) -> (y : a) -> compare' x y = GT -> compare' y x = LT
 
-instance HorribleUglyHack (Fin n) where
- compare' = fin_compare
- ord_eq_refl = ord_eq_refl_Fin
- ord_eq_symm = ord_eq_symm_Fin
- ord_eq_trans = ord_eq_trans_Fin
- ord_trans = ord_trans_Fin
- ord_symm = ord_symm_Fin
- ord_trans' = ord_trans_Fin'
- ord_symm' = ord_symm_Fin'
-
-evL : Sortable a => Vect n a -> List (Fin n) -> a
-evL env [] = e
-evL env (x :: xs) = index x env & evL env xs
-
-insert : HorribleUglyHack fin_n => fin_n -> List fin_n -> List fin_n
+insert : SpecifiedOrdering a => a -> List a -> List a
 insert x [] = x :: []
 insert x (y :: ys) = case compare' x y of
   LT => (x :: (y :: ys))
   EQ => (x :: (y :: ys))
   GT => (y :: (insert x ys))
 
-{-
-ridiculous_lemma : (x : Fin n) -> (y : Fin n) -> (l : List (Fin n)) ->
-                   (insert x (y :: ys) = (case compare' x y of
-  LT => (x :: (y :: ys))
-  EQ => (x :: (y :: ys))
-  GT => (y :: (insert x ys))))
-ridiculous_lemma x y l = refl
--}
+intermediate_lemma : SpecifiedOrdering a =>
+ (x : a) -> (t0 : a) -> (l0 : List a) ->
+ (P : List a -> Type) ->
+ (compare' x t0 = LT -> P (x :: (t0 :: l0))) ->
+ (compare' x t0 = EQ -> P (x :: (t0 :: l0))) ->
+ (compare' x t0 = GT -> P (t0 :: insert x l0)) ->
+ P (insert x (t0 :: l0))
+intermediate_lemma = ?p0
 
-ugly_hack_pt2 : HorribleUglyHack fin_n => (E : fin_n = Fin n) ->
-                List fin_n -> List (Fin n)
-ugly_hack_pt2 refl i = i
+intermediate_lemma' : (Sortable a, SpecifiedOrdering (Fin n)) =>
+ (n : Nat) -> (x : Fin n) -> (t0 : Fin n) -> (l0 : List (Fin n)) -> (env : Vect n a) ->
+ (compare' x t0 = LT -> index x env & evL env (t0 :: l0) = evL env ( (x :: (t0 :: l0)))) ->
+ (compare' x t0 = EQ -> index x env & evL env (t0 :: l0) = evL env ( (x :: (t0 :: l0)))) ->
+ (compare' x t0 = GT -> index x env & evL env (t0 :: l0) = evL env ( (t0 :: insert x l0))) ->
+ index x env & evL env (t0 :: l0) = evL env ( (insert x (t0 :: l0)))
+intermediate_lemma' n x t0 l0 env = intermediate_lemma x t0 l0
+  (\l' => index x env & evL env (t0 :: l0) = evL env l')
 
-ugly_hack_pt2b : HorribleUglyHack fin_n => (E : fin_n = Fin n) ->
-                 fin_n -> Fin n
-ugly_hack_pt2b refl i = i
-
-ugly_hack_pt3 : HorribleUglyHack fin_n => (E : fin_n = Fin n) ->
-                (x : fin_n) -> (xs : List fin_n) ->
-                ugly_hack_pt2 E (x :: xs) = ugly_hack_pt2b E x :: ugly_hack_pt2 E xs
-ugly_hack_pt3 refl x xs = refl
-
-insert_spec_hack : (HorribleUglyHack fin_n, Sortable a) =>
-              (env : Vect n a) ->
-              (x : fin_n) -> (xs : List (fin_n)) ->
-              (E : fin_n = Fin n) ->
-              evL env (ugly_hack_pt2 E (x :: xs))
-              = evL env (ugly_hack_pt2 E (insert x xs))
-
-insert_spec_hack = ?p1
-
-insert_spec : Sortable a =>
+insert_spec : (Sortable a, SpecifiedOrdering (Fin n)) =>
               (env : Vect n a) ->
               (x : Fin n) -> (xs : List (Fin n)) ->
               evL env (x :: xs) = evL env (insert x xs)
-insert_spec env x xs = insert_spec_hack env x xs refl
+insert_spec env x xs = ?p1
 
-sort' : List (Fin n) -> List (Fin n)
+sort' : SpecifiedOrdering (Fin n) => List (Fin n) -> List (Fin n)
 sort' [] = []
 sort' (x :: xs) = insert x (sort' xs)
 
-sort'_spec : Sortable a => (env : Vect n a) -> (l : List (Fin n)) ->
-                           evL env l = evL env (sort' l)
-sort'_spec env l = ?p2
+sort'_spec : (Sortable a, SpecifiedOrdering (Fin n)) =>
+             (env : Vect n a) -> (l : List (Fin n)) ->
+             evL env l = evL env (sort' l)
+sort'_spec env [] = ?p2_a
+sort'_spec env (x :: xs) = ?p2_b (insert_spec env x (sort' xs)) (sort'_spec env xs)
 
-do_rearrangement : Sortable a =>
-                   (env : Vect n a) -> 
-                   (lhs : List (Fin n)) -> (rhs : List (Fin n)) ->
-                   sort' lhs = sort' rhs ->
-                   evL env lhs = evL env rhs
-do_rearrangement = ?p3
-
-example1 : (x : Nat) -> (y : Nat) -> (z : Nat) ->
- (x + (y + (z + 0))) = (y + (x + (z + 0)))
-example1 x y z = do_rearrangement @{sort_plus} (x :: y :: z :: [])
-                                  (fZ :: fS fZ :: fS (fS fZ) :: [])
-                                   (fS fZ :: fZ :: fS (fS fZ) :: [])
-                                   refl
 
 ---------- Proofs ----------
 
-permutations.p3 = proof
-  intro a,n,S,env,lhs,rhs,E
-  rewrite sym (sort'_spec env lhs)
-  rewrite sym (sort'_spec env rhs)
-  rewrite E
+permutations.p2_b = proof
+  intro a,b,S1,S2,env,x,xs,T1,T2,T3,T4
+  compute
+  intro H1,H2
+  rewrite sym H2
+  rewrite sym H1
   trivial
 
 
-permutations.p2 = proof
-  intro a,n,S,env,l
-  induction l
-  compute
-  trivial
-  intro t0,l0,E
-  rewrite (insert_spec @{S} env t0 l0)
-  rewrite sym (insert_spec @{S} env t0 l0)
-  compute
-  rewrite E
-  rewrite sym E
-  rewrite sym (insert_spec @{S} env t0 (sort' l0))
+permutations.p2_a = proof
+  intros
   trivial
 
 
 permutations.p1 = proof
-  intro fin_n,a,n,Hack,S,env,x,xs,E
+  intro a,n,S1,S2,env,x,xs
   induction xs
   compute
   trivial
-  intro t0,l0
-  intro IH
+  intro t0,l0,H
   compute
   case (compare' x t0)
   compute
@@ -162,19 +108,27 @@ permutations.p1 = proof
   compute
   trivial
   compute
-  rewrite sym (ugly_hack_pt3 E t0 (insert x l0))
-  rewrite sym (ugly_hack_pt3 E x (t0 :: l0))
-  rewrite sym (ugly_hack_pt3 E t0 l0)
-  compute
-  rewrite IH
-  compute
-  rewrite sym (ugly_hack_pt3 E x l0)
-  compute
-  rewrite sym (ass (index (ugly_hack_pt2b E x) env) (index (ugly_hack_pt2b E t0) env) (evL env (ugly_hack_pt2 E l0)))
-  rewrite sym (comm (index (ugly_hack_pt2b E x) env) (index (ugly_hack_pt2b E t0) env))
-  rewrite (ass (index (ugly_hack_pt2b E t0) env) (index (ugly_hack_pt2b E x) env) (evL env (ugly_hack_pt2 E l0)))
+  rewrite H
+  rewrite sym (ass (index x env) (index t0 env) (evL env l0))
+  rewrite sym (ass (index t0 env) (index x env) (evL env l0))
+  rewrite (comm (index x env) (index t0 env))
   trivial
 
 
+permutations.p0 = proof
+  intro a,S,x,t0,l0,P
+  case (compare' x t0)
+  compute
+  intro H1,H2,H3
+  refine H1
+  trivial
+  intro H1,H2,H3
+  compute
+  refine H2
+  trivial
+  intro H1,H2,H3
+  compute
+  refine H3
+  trivial
 
 
