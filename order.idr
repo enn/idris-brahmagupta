@@ -76,12 +76,6 @@ ord_eq_lt x y z H1 H2 = ord_gt_lt _ _ (ord_gt_eq _ _ _ (ord_lt_gt _ _ H2) (eq_sy
 ord_eq_gt : SpecifiedOrdering a => (x : a) -> (y : a) -> (z : a) -> compare' x y = EQ -> compare' y z = GT -> compare' x z = GT
 ord_eq_gt x y z H1 H2 = ord_lt_gt _ _ (ord_lt_eq _ _ _ (ord_gt_lt _ _ H2) (eq_symm _ _ H1))
 
-
--- THIS (OR CONGRUENCE) NEEDS ADDED TO THE TYPECLASS
---compare_lt_eq_lemma : SpecifiedOrdering a => (x : a) -> (y : a) -> (z : a) ->
---                      compare' x y = LT -> compare' y z = EQ -> compare' x z = LT
---compare_lt_eq_lemma = ?l1
-
 instance SpecifiedOrdering a => SpecifiedOrdering (List a) where
  compare' (x :: xs) [] = GT
  compare' [] [] = EQ
